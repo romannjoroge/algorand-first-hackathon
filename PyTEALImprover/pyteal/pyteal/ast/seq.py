@@ -46,10 +46,16 @@ class Seq(Expr):
         # Handle case where a list of expressions is provided
         if len(exprs) == 1 and isinstance(exprs[0], list):
             exprs = exprs[0]
-
+        
+        isStore = False
+        exprs = list(exprs)
         for i, expr in enumerate(exprs):
             if not isinstance(expr, Expr):
                 raise TealInputError("{} is not a pyteal expression.".format(expr))
+            # Returns when immediately is found
+            if "Return (" in str(expr):
+                exprs = exprs[:i+1]
+                break
             if i + 1 < len(exprs):
                 try:
                     require_type(expr, TealType.none)
@@ -62,6 +68,12 @@ class Seq(Expr):
                     )
                     seq_error = TealSeqError(message)
                     raise seq_error
+            # Detect a store
+            if "Store" in str(expr):
+                if isStore == False:
+                    isStore = True
+                else:
+                    exprs.pop(i - 1)
 
         self.args = exprs
 
